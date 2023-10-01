@@ -14,8 +14,8 @@ NAME = philo
 CC = cc
 RM = rm -rf
 FLAGS = -Wall -Wextra -Werror -g 
-OBJ_DIR = objs/
-SRC_DIR = srcs/
+OBJ_DIR = obj
+SRC_DIR = src
 
 SRC 	= philosophers.c init.c states.c forks.c utils.c utils_2.c
 
