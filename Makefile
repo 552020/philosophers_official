@@ -13,31 +13,32 @@
 NAME = philo
 CC = cc
 RM = rm -rf
-FLAGS = -Wall -Wextra -Werror -g 
-OBJ_DIR = obj
-SRC_DIR = src
+CFLAGS = -Wall -Wextra -Werror -g -pthread
+INCLUDES = -I./includes
+OBJ_DIR = obj/
+SRC_DIR = src/
 
-SRC 	= philosophers.c init.c states.c forks.c utils.c utils_2.c
 
-SRCS	= $(addprefix $(SRC_DIR), $(SRC))
+SRC_FILES 	= philosophers.c init.c states.c forks.c utils.c utils_2.c
 
-OBJ		= $(SRC:.c=.o)
-OBJS 	= $(addprefix $(OBJ_DIR), $(OBJ))
+SRCS = $(addprefix $(SRC_DIR), $(SRC_FILES))
+OBJS 	= $(addprefix $(OBJ_DIR), $(SRC_FILES:.c=.o))
 
 all: $(OBJ_DIR) $(NAME) 
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES)  -c $< -o $@
 
 $(OBJ_DIR):
 	mkdir $(OBJ_DIR)
 
 $(NAME): $(OBJS)
-		$(CC) $(FLAGS) $(OBJS) -o $(NAME)
-#		$(CC) $(FLAGS) -fsanitize=thread -lpthread $(OBJS) -o $(NAME) 
+		$(CC) $(CFLAGS) $(INCLUDES) $(OBJS) -o $(NAME)
+#		$(CC) $(CFLAGS) $(INCLUDES) -fsanitize=thread -lpthread $(OBJS) -o $(NAME) 
 
 clean:
 		$(RM) $(OBJ_DIR)
+		
 
 fclean: clean
 		$(RM) $(NAME)
