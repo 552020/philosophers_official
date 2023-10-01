@@ -12,7 +12,7 @@
 
 #include "philosophers.h"
 
-void	input_check(int argc, char **argv)
+void	check_input(int argc, char **argv)
 {
 	int	i;
 	int	j;

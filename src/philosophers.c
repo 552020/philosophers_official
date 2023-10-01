@@ -106,7 +106,7 @@ int	main(int argc, char **argv)
 {
 	t_simulation_parameters	sim_params;
 
-	input_check(argc, argv);
+	check_input(argc, argv);
 	init_sim_param(&sim_params, argc, argv);
 	allocate(&sim_params);
 	init_mutexes(&sim_params);
