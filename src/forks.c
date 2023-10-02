@@ -39,9 +39,9 @@ void	drop_forks(t_philosopher_args *args)
 	if (args->philo->id % 2 == 1)
 		if (pthread_mutex_unlock(args->philo->fork_right) 
 			|| pthread_mutex_unlock(args->philo->fork_left))
-			print_exit("Error: could not unlock fork mutex\n");
+			print_and_exit("Error: could not unlock fork mutex\n");
 	if (args->philo->id % 2 == 0)
 		if (pthread_mutex_unlock(args->philo->fork_left) 
 			|| pthread_mutex_unlock(args->philo->fork_right))
-			print_exit("Error: could not unlock fork mutex\n");
+			print_and_exit("Error: could not unlock fork mutex\n");
 }

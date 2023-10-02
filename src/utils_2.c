@@ -12,7 +12,7 @@
 
 #include "philosophers.h"
 
-void	print_exit(char *str)
+void	print_and_exit(char *str)
 {
 	printf("%s\n", str);
 	exit(1);

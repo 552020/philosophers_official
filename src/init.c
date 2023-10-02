@@ -42,15 +42,15 @@ void	allocate(t_simulation_parameters *sim_params)
 	sim_params->philos = (t_philosopher *)malloc(sizeof(t_philosopher)
 			* sim_params->number_of_philos);
 	if (!sim_params->philos)
-		print_exit("Error: malloc philos failed\n");
+		print_and_exit("Error: malloc philos failed\n");
 	sim_params->forks = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t)
 			* sim_params->number_of_philos);
 	if (!sim_params->forks)
-		print_exit("Error: malloc forks failed\n");
+		print_and_exit("Error: malloc forks failed\n");
 	sim_params->args = (t_philosopher_args *)malloc(sizeof(t_philosopher_args)
 			* sim_params->number_of_philos);
 	if (!sim_params->args)
-		print_exit("Error: malloc args failed\n");
+		print_and_exit("Error: malloc args failed\n");
 }
 
 void	init_mutexes(t_simulation_parameters *sim_params)
