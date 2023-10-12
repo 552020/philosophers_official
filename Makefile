@@ -6,12 +6,18 @@
 #    By: slombard <slombard@student.42berlin.de>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/10/01 12:13:57 by slombard          #+#    #+#              #
-#    Updated: 2023/10/01 12:14:05 by slombard         ###   ########.fr        #
+#    Updated: 2023/10/12 19:10:15 by slombard         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = philo
+# Detect the OS
+UNAME_S := $(shell uname -s)
 CC = cc
+# If the OS is Darwin (macOS), set CC to gcc-13
+ifeq ($(UNAME_S),Darwin)
+    CC = gcc-13
+endif
 RM = rm -rf
 CFLAGS = -Wall -Wextra -Werror -g -pthread
 INCLUDES = -I./includes
@@ -25,6 +31,7 @@ SRCS = $(addprefix $(SRC_DIR), $(SRC_FILES))
 OBJS 	= $(addprefix $(OBJ_DIR), $(SRC_FILES:.c=.o))
 
 all: $(OBJ_DIR) $(NAME) 
+	@echo "Compiling with $(CC)"
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c
 	$(CC) $(CFLAGS) $(INCLUDES)  -c $< -o $@
