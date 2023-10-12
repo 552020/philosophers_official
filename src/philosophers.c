@@ -19,8 +19,8 @@ void	simulation(t_simulation_parameters *sim_params)
 	i = -1;
 	while (++i < sim_params->number_of_philos)
 	{
-		pthread_create(&sim_params->philos[i].p_thread, NULL,
-			eat_sleep_think, &sim_params->args[i]);
+		pthread_create(&sim_params->philos[i].p_thread, NULL, eat_sleep_think,
+			&sim_params->args[i]);
 	}
 	i = -1;
 	while (++i < sim_params->number_of_philos)
@@ -40,14 +40,16 @@ void	simulation(t_simulation_parameters *sim_params)
 
 void	*eat_sleep_think(void *arg)
 {
-	t_philosopher_args		*args;
+	t_philosopher_args	*args;
 
 	args = (t_philosopher_args *)arg;
 	if (args->sim_params->number_of_philos == 1)
 		return (handle_single_philosopher_case(args), NULL);
+	// TODO: change the print_state to printing the state of the philosopher,
+	// you need to pass the philosopher as an argument
 	print_state(args, THINKING);
 	death_and_finished_lock(args);
-	while (args->philo->death_state == EVERYONE_ALIVE 
+	while (args->philo->death_state == EVERYONE_ALIVE
 		&& (args->sim_params->hunger_state != PHILOSOPHERS_ARE_FULL
 			|| args->philo->meals_to_eat))
 	{
@@ -77,11 +79,10 @@ void	*monitor_death(void *arg)
 		pthread_mutex_lock(&args->philo->meal_mutex);
 		if (args->philo->meals_to_eat
 			&& (current_timestamp(args->sim_params->start_time)
-				- args->philo->last_meal_timestamp
-				> args->sim_params->time_to_die)
+				- args->philo->last_meal_timestamp > args->sim_params->time_to_die)
 			&& args->sim_params->hunger_state != PHILOSOPHERS_ARE_FULL)
 			return (case_death(args), NULL);
-		if (!args->philo->meals_to_eat 
+		if (!args->philo->meals_to_eat
 			|| args->sim_params->hunger_state == PHILOSOPHERS_ARE_FULL)
 			return (pthread_mutex_unlock(&args->philo->meal_mutex), NULL);
 		pthread_mutex_unlock(&args->philo->meal_mutex);
@@ -96,6 +97,7 @@ void	case_death(t_philosopher_args *args)
 	print_state(args, DIED);
 	pthread_mutex_lock(&args->sim_params->death_mutex);
 	i = -1;
+	// TODO: it should write the simulation wide variable death_state
 	while (++i < args->sim_params->number_of_philos)
 		args->sim_params->philos[i].death_state = SOMEONE_DIED;
 	pthread_mutex_unlock(&args->sim_params->death_mutex);
@@ -112,7 +114,9 @@ int	main(int argc, char **argv)
 	init_mutexes(&sim_params);
 	init_philos(&sim_params);
 	init_args(&sim_params);
+	// TODO: change name back to start_simulation
 	simulation(&sim_params);
+	// TODO: change name back to destroy_and_free
 	destroy_free(&sim_params);
 	return (0);
 }

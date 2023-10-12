@@ -35,19 +35,19 @@ void	print_state(t_philosopher_args *args, t_philosopher_state state)
 	pthread_mutex_unlock(&args->sim_params->death_mutex);
 }
 
-int	eat_routine(t_philosopher_args	*args)
+int	eat_routine(t_philosopher_args *args)
 {
 	pick_up_forks(args);
 	pthread_mutex_lock(&args->philo->meal_mutex);
-	args->philo->last_meal_timestamp = current_timestamp(
-			args->sim_params->start_time);
+	args->philo->last_meal_timestamp = current_timestamp(args->sim_params->start_time);
 	if (args->sim_params->hunger_check == ON)
 	{
+		// Why locking the finished mutex to check if the philosophers are full?
+		// Why not using the meal_mutex instead
 		pthread_mutex_lock(&args->sim_params->finished_mutex);
 		args->sim_params->total_meals_eaten++;
 		args->philo->meals_to_eat--;
-		if (args->sim_params->total_meals_eaten >= args->sim_params
-			->total_meals_to_be_eaten)
+		if (args->sim_params->total_meals_eaten >= args->sim_params->total_meals_to_be_eaten)
 			args->sim_params->hunger_state = PHILOSOPHERS_ARE_FULL;
 		pthread_mutex_unlock(&args->sim_params->finished_mutex);
 	}

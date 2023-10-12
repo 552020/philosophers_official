@@ -7,5 +7,10 @@
   "editor.tabSize": 4,
   "files.associations": {
     "pthread.h": "c"
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#3bdddd",
+    "titleBar.activeBackground": "#26bcea",
+    "titleBar.activeForeground": "#16c0eb"
   }
 }
