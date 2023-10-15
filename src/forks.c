@@ -3,45 +3,46 @@
 /*                                                        :::      ::::::::   */
 /*   forks.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: slombard <slombard@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: slombard <slombard@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/10/01 12:14:38 by slombard          #+#    #+#             */
-/*   Updated: 2023/10/01 12:14:48 by slombard         ###   ########.fr       */
+/*   Created: 2023/10/14 22:15:00 by slombard          #+#    #+#             */
+/*   Updated: 2023/10/15 16:00:08 by slombard         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
 
-void	pick_up_forks(t_philosopher_args *args)
+void	pick_up_fork(t_fork *fork)
 {
-	if (current_timestamp(args->sim_params->start_time) 
-		- args->philo->last_meal_timestamp 
-		< args->sim_params->time_to_eat + args->sim_params->time_to_sleep + 10)
-		usleep(500);
-	if (args->philo->id % 2 == 0)
-	{
-		pthread_mutex_lock(args->philo->fork_right);
-		print_state(args, HAS_FORK);
-		pthread_mutex_lock(args->philo->fork_left);
-		print_state(args, HAS_FORKS);
-	}
-	if (args->philo->id % 2 == 1)
-	{
-		pthread_mutex_lock(args->philo->fork_left);
-		print_state(args, HAS_FORK);
-		pthread_mutex_lock(args->philo->fork_right);
-		print_state(args, HAS_FORKS);
-	}
+	pthread_mutex_lock(&fork->mutex_fork);
 }
 
-void	drop_forks(t_philosopher_args *args)
+int	pick_up_forks(t_philosopher *philosopher, t_sim_params *sim_params)
 {
-	if (args->philo->id % 2 == 1)
-		if (pthread_mutex_unlock(args->philo->fork_right) 
-			|| pthread_mutex_unlock(args->philo->fork_left))
-			print_and_exit("Error: could not unlock fork mutex\n");
-	if (args->philo->id % 2 == 0)
-		if (pthread_mutex_unlock(args->philo->fork_left) 
-			|| pthread_mutex_unlock(args->philo->fork_right))
-			print_and_exit("Error: could not unlock fork mutex\n");
+	if (philosopher->id % 2 == 0)
+	{
+		usleep(100);
+		pick_up_fork(philosopher->fork_right);
+		philosopher->state = HAS_FORK;
+		print_state(philosopher, sim_params);
+		pick_up_fork(philosopher->fork_left);
+		philosopher->state = HAS_FORKS;
+		print_state(philosopher, sim_params);
+	}
+	if (philosopher->id % 2 == 1)
+	{
+		pick_up_fork(philosopher->fork_left);
+		philosopher->state = HAS_FORK;
+		print_state(philosopher, sim_params);
+		pick_up_fork(philosopher->fork_right);
+		philosopher->state = HAS_FORKS;
+		print_state(philosopher, sim_params);
+	}
+	return (1);
+}
+
+void	drop_forks(t_fork *fork_right, t_fork *fork_left)
+{
+	pthread_mutex_unlock(&fork_right->mutex_fork);
+	pthread_mutex_unlock(&fork_left->mutex_fork);
 }

@@ -3,120 +3,62 @@
 /*                                                        :::      ::::::::   */
 /*   philosophers.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: slombard <slombard@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: slombard <slombard@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/10/01 12:15:14 by slombard          #+#    #+#             */
-/*   Updated: 2023/10/01 12:15:21 by slombard         ###   ########.fr       */
+/*   Created: 2023/10/14 22:09:40 by slombard          #+#    #+#             */
+/*   Updated: 2023/10/15 16:01:34 by slombard         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philosophers.h"
-
-void	simulation(t_simulation_parameters *sim_params)
-{
-	long long	i;
-
-	i = -1;
-	while (++i < sim_params->number_of_philos)
-	{
-		pthread_create(&sim_params->philos[i].p_thread, NULL, eat_sleep_think,
-			&sim_params->args[i]);
-	}
-	i = -1;
-	while (++i < sim_params->number_of_philos)
-	{
-		pthread_create(&sim_params->philos[i].monitor_thread, NULL,
-			monitor_death, &sim_params->args[i]);
-	}
-	i = -1;
-	while (++i < sim_params->number_of_philos)
-		pthread_join(sim_params->philos[i].p_thread, NULL);
-	i = -1;
-	while (++i < sim_params->number_of_philos)
-	{
-		pthread_join(sim_params->philos[i].monitor_thread, NULL);
-	}
-}
 
 void	*eat_sleep_think(void *arg)
 {
 	t_philosopher_args	*args;
 
 	args = (t_philosopher_args *)arg;
-	if (args->sim_params->number_of_philos == 1)
-		return (handle_single_philosopher_case(args), NULL);
-	// TODO: change the print_state to printing the state of the philosopher,
-	// you need to pass the philosopher as an argument
-	print_state(args, THINKING);
-	death_and_finished_lock(args);
-	while (args->philo->death_state == EVERYONE_ALIVE
-		&& (args->sim_params->hunger_state != PHILOSOPHERS_ARE_FULL
-			|| args->philo->meals_to_eat))
-	{
-		pthread_mutex_unlock(&args->sim_params->death_mutex);
-		if (args->sim_params->hunger_state != PHILOSOPHERS_ARE_FULL
-			|| args->philo->meals_to_eat)
-		{
-			pthread_mutex_unlock(&args->sim_params->finished_mutex);
-			if (!eat_routine(args))
-				return (NULL);
-		}
-		pthread_mutex_unlock(&args->sim_params->finished_mutex);
-		sleep_routine(args);
-		print_state(args, THINKING);
-		death_and_finished_lock(args);
-	}
-	return (death_and_finished_unlock(args), NULL);
-}
-
-void	*monitor_death(void *arg)
-{
-	t_philosopher_args	*args;
-
-	args = (t_philosopher_args *)arg;
+	print_state(args->philosopher, args->sim_params);
 	while (1)
 	{
-		pthread_mutex_lock(&args->philo->meal_mutex);
-		if (args->philo->meals_to_eat
-			&& (current_timestamp(args->sim_params->start_time)
-				- args->philo->last_meal_timestamp > args->sim_params->time_to_die)
-			&& args->sim_params->hunger_state != PHILOSOPHERS_ARE_FULL)
-			return (case_death(args), NULL);
-		if (!args->philo->meals_to_eat
-			|| args->sim_params->hunger_state == PHILOSOPHERS_ARE_FULL)
-			return (pthread_mutex_unlock(&args->philo->meal_mutex), NULL);
-		pthread_mutex_unlock(&args->philo->meal_mutex);
-		usleep(500);
+		if (check_death_condition(args->philosopher, args->sim_params))
+			break ;
+		if (check_meal_condition(args->sim_params))
+			break ;
+		if (!eat_routine(args->philosopher, args->sim_params))
+			break ;
+		if (check_death_condition(args->philosopher, args->sim_params))
+			break ;
+		if (check_meal_condition(args->sim_params))
+			break ;
+		if (!sleep_routine(args->philosopher, args->sim_params))
+			break ;
+		if (check_death_condition(args->philosopher, args->sim_params))
+			break ;
+		think_routine(args->philosopher, args->sim_params);
 	}
-}
-
-void	case_death(t_philosopher_args *args)
-{
-	int	i;
-
-	print_state(args, DIED);
-	pthread_mutex_lock(&args->sim_params->death_mutex);
-	i = -1;
-	// TODO: it should write the simulation wide variable death_state
-	while (++i < args->sim_params->number_of_philos)
-		args->sim_params->philos[i].death_state = SOMEONE_DIED;
-	pthread_mutex_unlock(&args->sim_params->death_mutex);
-	pthread_mutex_unlock(&args->philo->meal_mutex);
+	return (NULL);
 }
 
 int	main(int argc, char **argv)
 {
-	t_simulation_parameters	sim_params;
+	t_sim_params		sim_params;
+	t_philosopher		*philosophers;
+	t_fork				*forks;
+	t_philosopher_args	*args;
 
 	check_input(argc, argv);
-	init_sim_param(&sim_params, argc, argv);
-	allocate(&sim_params);
-	init_mutexes(&sim_params);
-	init_philos(&sim_params);
-	init_args(&sim_params);
-	// TODO: change name back to start_simulation
-	simulation(&sim_params);
-	// TODO: change name back to destroy_and_free
-	destroy_free(&sim_params);
+	init_sim_params(&sim_params, argc, argv);
+	allocate_memory(&sim_params, &philosophers, &forks, &args);
+	setup_env(&sim_params, philosophers, forks, args);
+	if (sim_params.philos_nbr == 1)
+		handle_single_philo(args);
+	else
+		start_simulation(philosophers, args, &sim_params);
+	destroy_and_free(&sim_params, philosophers, forks, args);
+	if (sim_params.death_state != SOMEONE_DIED && sim_params.hunger_check == ON
+		&& sim_params.hunger_state == PHILOSOPHERS_ARE_FULL)
+		printf("%lld Everyone ate enough\n",
+			current_timestamp(sim_params.start_time));
+	printf("%lld Exiting program\n", current_timestamp(sim_params.start_time));
 	return (0);
 }

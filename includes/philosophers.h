@@ -3,21 +3,21 @@
 /*                                                        :::      ::::::::   */
 /*   philosophers.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: slombard <slombard@student.42berlin.de>    +#+  +:+       +#+        */
+/*   By: slombard <slombard@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/10/01 12:15:31 by slombard          #+#    #+#             */
-/*   Updated: 2023/10/01 12:15:34 by slombard         ###   ########.fr       */
+/*   Created: 2023/10/14 21:53:42 by slombard          #+#    #+#             */
+/*   Updated: 2023/10/15 18:28:40 by slombard         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef PHILOSOPHERS_H
 # define PHILOSOPHERS_H
 
-# include <pthread.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <sys/time.h>
-# include <unistd.h>
+# include <pthread.h>  // threads, mutex
+# include <stdio.h>    // printf - substitute with putstr, to write again,
+# include <stdlib.h>   // malloc, free
+# include <sys/time.h> // gettimeftheday
+# include <unistd.h>   // usleep and write
 
 typedef enum e_philosopher_state
 {
@@ -26,103 +26,154 @@ typedef enum e_philosopher_state
 	EATING,
 	SLEEPING,
 	THINKING,
-	DIED
-}									t_philosopher_state;
+	DEAD
+}						t_philosopher_state;
 
-typedef enum death_state_e
+typedef enum e_death_state
 {
 	EVERYONE_ALIVE = 0,
 	SOMEONE_DIED
-}									t_death_state;
+}						t_death_state;
 
 typedef enum e_hunger_state
 {
 	PHILOSOPHERS_NOT_FULL_YET = 0,
 	PHILOSOPHERS_ARE_FULL
-}									t_hunger_state;
+}						t_hunger_state;
 
+// TODO: eventually change to meal check;
 typedef enum e_hunger_check
 {
 	ON = 0,
 	OFF
-}									t_hunger_check;
+}						t_hunger_check;
+
+typedef enum e_death_announced
+{
+	NO = 0,
+	YES
+}						t_death_announced;
+
+/* The fork.id is just for debugging reason*/
+typedef struct s_fork
+{
+	int					id;
+	pthread_mutex_t		mutex_fork;
+}						t_fork;
 
 typedef struct s_philosopher
 {
-	int								id;
-	pthread_t						p_thread;
-	pthread_t						monitor_thread;
-	pthread_mutex_t					meal_mutex;
-	pthread_mutex_t					*fork_right;
-	pthread_mutex_t					*fork_left;
-	long long						last_meal_timestamp;
-	int								meals_to_eat;
-	t_death_state					death_state;
+	int					id;
+	pthread_t			p_thread;
+	t_philosopher_state	state;
+	t_fork				*fork_right;
+	t_fork				*fork_left;
+	long long			last_meal_ts;
+	int					meals_eaten;
+	int					meals_to_eat;
 
-}									t_philosopher;
-
-struct s_philosopher_args;
-typedef struct s_philosopher_args	t_philosopher_args;
+}						t_philosopher;
 
 typedef struct s_simulation_parameters
 {
-	int								number_of_philos;
-	int								time_to_die;
-	int								time_to_eat;
-	int								time_to_sleep;
-	struct timeval					start_time;
-	int								meals_to_eat_each;
-	int								total_meals_to_be_eaten;
-	int								total_meals_eaten;
-	t_hunger_check					hunger_check;
-	t_hunger_state					hunger_state;
-	t_philosopher					*philos;
-	pthread_mutex_t					*forks;
-	pthread_mutex_t					print_mutex;
-	pthread_mutex_t					death_mutex;
-	pthread_mutex_t					finished_mutex;
-	t_philosopher_args				*args;
-}									t_simulation_parameters;
+	int					philos_nbr;
+	int					time_to_die;
+	int					time_to_eat;
+	int					time_to_sleep;
+	struct timeval		start_time;
+	t_death_state		death_state;
+	t_death_announced	death_announced;
+	int					nbr_of_times_each_philo_must_eat;
+	int					total_meals_to_be_eaten;
+	int					total_meals_eaten;
+	t_hunger_check		hunger_check;
+	t_hunger_state		hunger_state;
+	pthread_mutex_t		print_mutex;
+	pthread_mutex_t		meal_mutex;
+	pthread_mutex_t		death_mutex;
+
+}						t_sim_params;
 
 typedef struct s_philosopher_args
 {
-	t_philosopher					*philo;
-	t_simulation_parameters			*sim_params;
-	pthread_mutex_t					*print_mutex;
-}									t_philosopher_args;
+	t_philosopher		*philosopher;
+	t_sim_params		*sim_params;
+	pthread_mutex_t		*print_mutex;
+	pthread_mutex_t		*meal_mutex;
+	pthread_mutex_t		*death_mutex;
+}						t_philosopher_args;
 
-// initilization functions
+/* Single philosopher edge case*/
 
-void								allocate(t_simulation_parameters *sim_params);
-void								init_sim_param(t_simulation_parameters *sim_params,
-										int argc, char **argv);
-void								init_mutexes(t_simulation_parameters *sim_params);
-void								init_philos(t_simulation_parameters *sim_params);
-void								init_args(t_simulation_parameters *sim_params);
+void					handle_single_philo(t_philosopher_args *args);
 
-// simulation functions
+/* Init */
+void					init_sim_params(t_sim_params *sim_params, int argc,
+							char **argv);
+void					allocate_memory(t_sim_params *sim_params,
+							t_philosopher **philosophers, t_fork **forks,
+							t_philosopher_args **args);
+void					init_args(t_sim_params *sim_params,
+							t_philosopher *philosophers,
+							t_philosopher_args *args);
+void					init_philos(t_sim_params *sim_params,
+							t_philosopher *philosophers, t_fork *forks);
+void					setup_env(t_sim_params *sim_params,
+							t_philosopher *philosophers, t_fork *forks,
+							t_philosopher_args *args);
+void					init_forks(t_sim_params *sim_params, t_fork *forks);
+void					start_simulation(t_philosopher *philosophers,
+							t_philosopher_args *args, t_sim_params *sim_params);
 
-void								*monitor_death(void *arg);
-void								case_death(t_philosopher_args *args);
-void								simulation(t_simulation_parameters *sim_params);
-void								print_state(t_philosopher_args *args,
-										t_philosopher_state state);
-void								pick_up_forks(t_philosopher_args *args);
-void								drop_forks(t_philosopher_args *args);
-int									eat_routine(t_philosopher_args *args);
-void								sleep_routine(t_philosopher_args *args);
-void								*eat_sleep_think(void *arg);
+/* Prints */
+void					print_and_exit(char *str);
+void					print_free_exit(char *str, t_philosopher **philosophers,
+							t_fork **forks, t_philosopher_args **args);
+// void					print_state(t_philosopher *philosopher,
+// 							t_sim_params *sim_params,
+// 							t_hold_death_mutex hold_death_mutex);
+void					print_state(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+void					print_state_no_lock_death(t_philosopher *philosopher,
+							t_sim_params *sim_params);
 
-// util functions
+/* Utils */
+int						ft_isdigit(int c);
+int						ft_atoi(const char *str);
+long long				current_timestamp(struct timeval start_time);
+void					destroy_and_free(t_sim_params *sim_params,
+							t_philosopher *philosophers, t_fork *forks,
+							t_philosopher_args *args);
 
-void								check_input(int argc, char **argv);
-long long							current_timestamp(struct timeval start_time);
-void								handle_single_philosopher_case(t_philosopher_args *args);
-// long long ft_atoi(const char *nptr);
-int									ft_atoi(const char *str);
-void								print_and_exit(char *str);
-void								destroy_free(t_simulation_parameters *sim_params);
-void								death_and_finished_lock(t_philosopher_args *args);
-void								death_and_finished_unlock(t_philosopher_args *args);
+/* Checks */
+void					check_input(int argc, char **argv);
+int						check_death_condition(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+int						check_meal_condition(t_sim_params *sim_params);
+int						check_death(t_philosopher *philosopher,
+							t_sim_params *sim_params,
+							struct timeval start_time);
+
+/* Routines */
+void					*eat_sleep_think(void *arg);
+int						eat_routine(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+int						sleep_routine(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+void					think_routine(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+
+int						is_about_to_die(t_philosopher *philosopher,
+							t_sim_params *sim_params, int time_to_consider);
+void					sleep_and_die(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+void					increase_meals(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+
+/* Forks */
+void					pick_up_fork(t_fork *fork);
+int						pick_up_forks(t_philosopher *philosopher,
+							t_sim_params *sim_params);
+void					drop_forks(t_fork *fork_right, t_fork *fork_left);
 
 #endif
